@@ -1,0 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+@import 'tailwindcss';
+
+* {
+    font-family: 'Outfit', sans-serif;
+}
+
+@layer base {
+    body {
+        @apply bg-gray-950 text-white antialiased;
+    }
+
+    button {
+        @apply cursor-pointer;
+    }
+}
+
+@keyframes marquee {
+    0% {
+        transform: translateX(0%);
+    }
+
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+.animate-marquee {
+    display: inline-flex;
+    animation: marquee 16s linear infinite;
+}
+
+@keyframes float {
+    0% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-5px);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
+}
+
+.animate-float {
+    animation: float 5s ease-in-out infinite;
+}
+
+@theme {
+    --color-primary: #8b5cf6;
+    --color-primary-hover: #7c3aed;
+    --color-secondary: #ec4899;
+    --color-dark-bg: #0f172a;
+    --color-dark-card: #1e293b;
+}
+
+@layer utilities {
+    .glass-panel {
+        @apply bg-white/5 backdrop-blur-lg border border-white/10 shadow-xl;
+    }
+
+    .btn-secondary {
+        @apply px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold backdrop-blur-sm border border-white/10 transition-all duration-300;
+    }
+}

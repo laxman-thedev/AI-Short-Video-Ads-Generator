@@ -74,11 +74,11 @@ export default function Pricing() {
                             <div>
                                 {plan.popular ? (
                                     <PrimaryButton className="w-full">
-                                        Get started
+                                        Buy Now
                                     </PrimaryButton>
                                 ) : (
                                     <GhostButton className="w-full justify-center">
-                                        Get started
+                                        Buy Now
                                     </GhostButton>
                                 )}
                             </div>

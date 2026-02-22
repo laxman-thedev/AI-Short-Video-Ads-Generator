@@ -22,9 +22,9 @@ export const plansData = [
     {
         id: 'free',
         name: 'Free',
-        price: '$0',
+        price: '$10',
         desc: 'Always free plan to get started.',
-        credits: 20,
+        credits: 25,
         features: [
             '25 Free Credits',
             'Standard quality',
@@ -36,11 +36,11 @@ export const plansData = [
     {
         id: 'pro',
         name: 'Pro',
-        price: '$9',
+        price: '$29',
         desc: 'Best for creators and small teams.',
         credits: 80,
         features: [
-            '80 Monthly Credits',
+            '80 Credits',
             'HD quality',
             'No watermark',
             'Video generation',
@@ -51,11 +51,11 @@ export const plansData = [
     {
         id: 'premium',
         name: 'Premium',
-        price: '$29',
+        price: '$99',
         desc: 'For professionals and growing businesses.',
-        credits: 240,
+        credits: 300,
         features: [
-            '240 Monthly Credits',
+            '300 Credits',
             'FHD quality',
             'No watermark',
             'Fast generation speed',

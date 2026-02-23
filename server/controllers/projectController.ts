@@ -223,7 +223,7 @@ export const createVideo = async (req: Request, res: Response) => {
     const image = await axios.get(project.generatedImage, { responseType: 'arraybuffer', })
     const imageBytes: any = Buffer.from(image.data)
 
-    let operation:any = await ai.models.generateVideos({ 
+    let operation: any = await ai.models.generateVideos({
       model,
       prompt,
       image: {
@@ -237,40 +237,42 @@ export const createVideo = async (req: Request, res: Response) => {
       }
     })
 
-    while(!operation.done){ 
+    while (!operation.done) {
       await new Promise(resolve => setTimeout(resolve, 10000));
       operation = await ai.operations.getVideosOperation({
         operation: operation
       });
     }
 
-    // Define filename and filePath before using them
+    // Use Vercel temp directory
     const filename = `${userId}-${Date.now()}.mp4`;
-    const filePath = path.join('videos', filename);
-    fs.mkdirSync('videos', { recursive: true });
-    
-    if(!operation.response.generatedVideos){
-      throw new Error(operation.response.raiMediaFilteredReasons[0]);
+    const filePath = path.join("/tmp", filename);
+
+    if (!operation.response.generatedVideos) {
+      throw new Error("Video generation failed");
     }
 
-    await ai.files.download({ 
+    // Download video to temp
+    await ai.files.download({
       file: operation.response.generatedVideos[0].video,
       downloadPath: filePath
-    })
-
-    const uploadResult = await cloudinary.uploader.upload(filePath, {
-      resource_type: 'video'
     });
 
+    // Upload to Cloudinary
+    const uploadResult = await cloudinary.uploader.upload(filePath, {
+      resource_type: "video"
+    });
+
+    // Update DB
     await prisma.project.update({
       where: { id: projectId },
       data: {
         generatedVideo: uploadResult.secure_url,
         isGenerating: false
       }
-    })
+    });
 
-    //remove video file from disk after upload
+    // Delete temp file
     fs.unlinkSync(filePath);
 
     res.json({ message: 'video generation completed', videoUrl: uploadResult.secure_url })

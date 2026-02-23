@@ -2,16 +2,11 @@ import { Request, Response } from "express"
 import * as Sentry from "@sentry/node"
 import { prisma } from "../configs/prisma.js";
 import { v2 as cloudinary } from 'cloudinary'
-import { GenerateContentConfig,HarmBlockThreshold,HarmCategory } from "@google/genai";
+import { GenerateContentConfig, HarmBlockThreshold, HarmCategory } from "@google/genai";
 import fs from 'fs';
 import path from "path";
 import ai from "../configs/ai.js";
 import axios from "axios";
-
-// import dotenv from 'dotenv';
-// dotenv.config();
-
-
 
 const loadImage = (path: string, mimeType: string) => {
   return {
@@ -75,9 +70,9 @@ export const createProject = async (req: Request, res: Response) => {
     tempProjectId = project.id;
 
     const model = "gemini-2.5-flash-image";
-    const generationConfig: GenerateContentConfig = { 
+    const generationConfig: GenerateContentConfig = {
       maxOutputTokens: 32768,
-      temperature:1,
+      temperature: 1,
       topP: 0.95,
       responseModalities: ['IMAGE'],
       imageConfig: {
@@ -105,33 +100,37 @@ export const createProject = async (req: Request, res: Response) => {
     };
 
     //image to base64 structure for ai model
-    const img1base64 =loadImage(images[0].path,images[0].mimetype);
-    const img2base64 =loadImage(images[1].path,images[1].mimetype);
-    const prompt={ text: `
+    const img1base64 = loadImage(images[0].path, images[0].mimetype);
+    const img2base64 = loadImage(images[1].path, images[1].mimetype);
+    const prompt = {
+      text: `
         Combine the person and product into a realistic photo. Make the person naturally hold or use the product. Match lighting, shadows, scale and perspective. Make the person stand in professional studio lighting. Output ecommerce-quality photo realistic imagery. ${userPrompt}
       ` };
 
-    const response:any = await ai.models.generateContent({ 
+    const response: any = await ai.models.generateContent({
       model,
       contents: [img1base64, img2base64, prompt],
       config: generationConfig
     });
 
-    if(!response?.candidates?.[0]?.content?.parts){
+    if (!response?.candidates?.[0]?.content?.parts) {
       throw new Error('Unexpected response');
     }
 
-    const parts = response.candidates[0].content.parts;
+    const parts = response?.candidates?.[0]?.content?.parts || [];
 
     let finalBuffer: Buffer | null = null;
-    for(const part of parts){
-      if(part.inlineDate){
-        finalBuffer = Buffer.from(part.inlineData.data, 'base64');
+
+    for (const part of parts) {
+      if (part.inlineData?.data) {
+        finalBuffer = Buffer.from(part.inlineData.data, "base64");
+        break;
       }
     }
 
-    if(!finalBuffer){
-      throw new Error('Failed to generate image');
+    if (!finalBuffer) {
+      console.error("Gemini response:", JSON.stringify(response, null, 2));
+      throw new Error("Failed to generate image - no inlineData returned");
     }
 
     const base64Image = `data:image/png;base64,${finalBuffer.toString('base64')}`;
@@ -229,6 +228,7 @@ export const createVideo = async (req: Request, res: Response) => {
       prompt,
       image: {
         imageBytes: imageBytes.toString('base64'),
+        mimeType: 'image/png'    // i forgot to add this now added
       },
       config: {
         aspectRatio: project?.aspectRatio || '9:16',
@@ -250,9 +250,8 @@ export const createVideo = async (req: Request, res: Response) => {
     fs.mkdirSync('videos', { recursive: true });
     
     if(!operation.response.generatedVideos){
-      throw new Error('Video generation failed');
+      throw new Error(operation.response.raiMediaFilteredReasons[0]);
     }
-
 
     await ai.files.download({ 
       file: operation.response.generatedVideos[0].video,
@@ -326,7 +325,7 @@ export const deleteProject = async (req: Request, res: Response) => {
     await prisma.project.delete({
       where: { id: projectId }
     })
-    
+
     res.json({ message: 'Project deleted' });
 
   } catch (error: any) {

@@ -75,7 +75,7 @@ export default function Navbar() {
                         <PrimaryButton onClick={() => openSignUp()} className='max-sm:text-xs hidden sm:inline-block'>Get Started</PrimaryButton>
                     </div>
                 ) : (
-                    <div className='flex-gap-2'>
+                    <div className='flex gap-2'>
                         <GhostButton onClick={() => navigate('/plans')} className='border-none text-gray-300 sm:py-1.5' >
                             Credits: {credits}
                         </GhostButton>

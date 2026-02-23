@@ -65,6 +65,7 @@ const Generator = () => {
 
     } catch (error: any) {
       setIsGenerating(false);
+      setError(error?.response?.data?.message || error.message)
       toast.error(error?.response?.data?.message || error.message)
     }
 

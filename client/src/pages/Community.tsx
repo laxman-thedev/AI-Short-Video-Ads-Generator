@@ -1,26 +1,30 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
 import type { Project } from "../types";
 import { Loader2Icon } from "lucide-react";
-import { dummyGenerations } from "../assets/assets";
 import ProjectCard from "../components/ProjectCard";
+import api from "../configs/axios";
+import toast from "react-hot-toast";
 
 const Community = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Simulate API delay
-    const timer = setTimeout(() => {
-      // Only show published projects
-      const published = dummyGenerations.filter(
-        (project) => project.isPublished
-      );
-      setProjects(published);
-      setLoading(false);
-    }, 2000);
+  const fetchProjects = async () => {
+    try {
+      const { data } = await api.get('/api/project/published')
+      setProjects(data.projects)
+      setLoading(false)
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || error.message);
+      console.log(error);
+    }
+  }
 
-    return () => clearTimeout(timer);
-  }, []);
+  useEffect(() => {
+    fetchProjects()
+  }, [])
 
   if (loading) {
     return (

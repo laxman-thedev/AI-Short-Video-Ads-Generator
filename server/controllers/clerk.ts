@@ -62,14 +62,15 @@ const clerkWebhooks = async (req: Request, res: Response) => {
             premium: 240,
           };
 
-          const clerkUserId = data?.payer?.userId;
+          const clerkUserId = data?.payer?.user_id;
 
-          const planId: keyof typeof credits =
-            data?.subscription_items?.[0]?.plan?.slug;
+          const planSlug = data?.subscription_items?.[0]?.plan?.slug;
 
-          if (planId !== "pro" && planId !== "premium") {
+          if (!planSlug || !(planSlug in credits)) {
             return res.status(400).json({ message: "Invalid plan" });
           }
+
+          const planId = planSlug as keyof typeof credits;
 
           console.log("Plan Selected:", planId);
 

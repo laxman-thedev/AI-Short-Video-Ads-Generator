@@ -8,8 +8,16 @@ import {
   Wand2Icon,
 } from "lucide-react";
 import { PrimaryButton } from "../components/Buttons";
+import { useAuth, useUser } from "@clerk/clerk-react";
+import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import api from "../configs/axios";
 
 const Generator = () => {
+
+  const {user} = useUser()
+  const {getToken} = useAuth()
+  const navigate = useNavigate()
 
   const [name, setName] = useState("");
   const [productName, setProductName] = useState("");
@@ -33,21 +41,34 @@ const Generator = () => {
 
   const handleGenerate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError("");
+    if (!user) return toast('please login to genearte')
+    if (!productImage || !modelImage || !name || !productName || !aspectRatio)
+      return toast('please fill all the required fields')
 
-    if (!productImage || !modelImage || !name || !productName || !aspectRatio) {
-      setError("Please fill all required fields");
-      return;
-    }
-    else{
+    try {
       setIsGenerating(true);
-      // Simulate generation process
-      setTimeout(() => {
-        setIsGenerating(false);
-        alert("Image generated successfully! (This is a simulation.)");
-      }, 3000);
+      const formData = new FormData();
+      formData.append('name', name)
+      formData.append('productName', productName)
+      formData.append('productDescription', productDescription)
+      formData.append('userPrompt', userPrompt)
+      formData.append('aspectRatio', aspectRatio) // changes
+      formData.append('images', productImage)
+      formData.append('images', modelImage)
+
+      const token = await getToken()
+
+      const { data } = await api.post('api/project/create', formData, { headers: { Authorization: `Bearer ${token}` } })
+
+      toast.success(data.message)
+      navigate('/result/' + data.projectId)
+
+    } catch (error: any) {
+      setIsGenerating(false);
+      toast.error(error?.response?.data?.message || error.message)
     }
-  };
+
+  }
 
   return (
     <div className="min-h-screen text-white p-6 md:p-12 mt-28">

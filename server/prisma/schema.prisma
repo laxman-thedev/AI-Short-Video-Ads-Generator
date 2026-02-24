@@ -8,16 +8,18 @@ datasource db {
 }
 
 model User {
-  id        String   @id
-  email     String
-  name      String
-  image     String
-  credits   Int      @default(20)
+  id              String   @id
+  email           String
+  name            String?
+  image           String?
+  credits         Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
-  projects     Project[]
+  dailyCredits    Int      @default(20)
+  lastCreditReset DateTime @default(now())
+
+  projects        Project[]
 }
 
 model Project {

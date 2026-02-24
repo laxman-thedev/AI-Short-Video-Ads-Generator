@@ -7,6 +7,8 @@ import fs from 'fs';
 import path from "path";
 import ai from "../configs/ai.js";
 import axios from "axios";
+import { checkAndResetDailyCredits } from "../middlewares/dailyCredits.js";
+import os from "os";
 
 const loadImage = (path: string, mimeType: string) => {
   return {
@@ -22,9 +24,9 @@ export const createProject = async (req: Request, res: Response) => {
   let tempProjectId: string;
   const { userId } = req.auth();
   let isCreditDeducted = false;
+  const COST = 5;
 
   const { name = "New Project", aspectRatio, userPrompt, productName, productDescription, targetLength = 5 } = req.body;
-  console.log('[createProject] Request body:', { name, aspectRatio, userPrompt, productName, productDescription, targetLength });
 
   const images: any = req.files;
 
@@ -32,16 +34,21 @@ export const createProject = async (req: Request, res: Response) => {
     return res.status(400).json({ message: 'please upload at least 2 images' })
   }
 
-  const user = await prisma.user.findUnique({ where: { id: userId } })
+  const user = await checkAndResetDailyCredits(userId);
 
-  if (!user || user.credits < 5) {
-    return res.status(401).json({ message: 'Insufficient credits' })
+  if (!user || user.credits < COST || user.dailyCredits < COST) {
+    return res.status(401).json({
+      message: "Not enough credits or daily limit reached"
+    });
   }
   else {
     //deduct credits for image generation
     await prisma.user.update({
       where: { id: userId },
-      data: { credits: { decrement: 5 } }
+      data: {
+        credits: { decrement: COST },
+        dailyCredits: { decrement: COST }
+      }
     }).then(() => { isCreditDeducted = true })
   }
 
@@ -162,7 +169,7 @@ export const createProject = async (req: Request, res: Response) => {
       //add credits back
       await prisma.user.update({
         where: { id: userId },
-        data: { credits: { increment: 5 } }
+        data: { credits: { increment: 5 }, dailyCredits: { increment: COST } }
       })
     }
 
@@ -172,89 +179,107 @@ export const createProject = async (req: Request, res: Response) => {
 }
 
 export const createVideo = async (req: Request, res: Response) => {
-
-  const { userId } = req.auth()
+  const { userId } = req.auth();
   const { projectId } = req.body;
+  const COST = 10;
 
   let isCreditDeducted = false;
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId }
-  })
-
-  if (!user || user.credits < 10) {
-    return res.status(401).json({ message: 'insufficient credits' });
-  }
-
-  //reduce credits for video generation
-  await prisma.user.update({
-    where: { id: userId },
-    data: { credits: { decrement: 10 } }
-  }).then(() => { isCreditDeducted = true });
-
   try {
+    // Check & reset daily credits
+    const user = await checkAndResetDailyCredits(userId);
+
+    if (!user || user.credits < COST || user.dailyCredits < COST) {
+      return res.status(401).json({
+        message: "Not enough credits or daily limit reached"
+      });
+    }
+
+    // Validate project first
     const project = await prisma.project.findUnique({
-      where: { id: projectId, userId },
-      include: { user: true }
-    })
+      where: { id: projectId, userId }
+    });
 
     if (!project || project.isGenerating) {
-      return res.status(404).json({ message: 'Generation in progress' });
+      return res.status(404).json({ message: "Generation in progress or project not found" });
     }
 
     if (project.generatedVideo) {
-      return res.status(404).json({ message: 'video already generated' });
+      return res.status(400).json({ message: "Video already generated" });
     }
 
+    if (!project.generatedImage) {
+      return res.status(400).json({ message: "Generated image not found" });
+    }
+
+    // Deduct credits only after validation
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        credits: { decrement: COST },
+        dailyCredits: { decrement: COST }
+      }
+    });
+
+    isCreditDeducted = true;
+
+    // Mark generating
     await prisma.project.update({
       where: { id: projectId },
       data: { isGenerating: true }
-    })
+    });
 
     const prompt = `make the person showcase the product which is ${project.productName}
-      ${project.productDescription && `and product Description:${project.productDescription}`}`
+    ${project.productDescription || ""}`;
 
-    const model = 'veo-3.1-generate-preview'
+    const model = "veo-3.1-generate-preview";
 
-    if (!project.generatedImage) {
-      throw new Error('Generated image not found')
-    }
+    const image = await axios.get(project.generatedImage, {
+      responseType: "arraybuffer"
+    });
 
-    const image = await axios.get(project.generatedImage, { responseType: 'arraybuffer', })
-    const imageBytes: any = Buffer.from(image.data)
+    const imageBytes = Buffer.from(image.data);
 
     let operation: any = await ai.models.generateVideos({
       model,
       prompt,
       image: {
-        imageBytes: imageBytes.toString('base64'),
-        mimeType: 'image/png'    // i forgot to add this now added
+        imageBytes: imageBytes.toString("base64"),
+        mimeType: "image/png"
       },
       config: {
-        aspectRatio: project?.aspectRatio || '9:16',
+        aspectRatio: project.aspectRatio || "9:16",
         numberOfVideos: 1,
-        resolution: '720p'
+        resolution: "720p"
       }
-    })
+    });
 
+    // Poll
     while (!operation.done) {
       await new Promise(resolve => setTimeout(resolve, 10000));
-      operation = await ai.operations.getVideosOperation({
-        operation: operation
-      });
+      operation = await ai.operations.getVideosOperation({ operation });
     }
 
-    // Use Vercel temp directory
+    // Safe checks
+    if (operation.error) {
+      throw new Error(operation.error.message || "Video generation failed");
+    }
+
+    if (!operation.response?.generatedVideos?.length) {
+      console.error("Gemini operation:", operation);
+      throw new Error("Video generation failed - no output");
+    }
+
+    const videoFile = operation.response.generatedVideos[0].video;
+
+    // Temp path for Vercel
     const filename = `${userId}-${Date.now()}.mp4`;
-    const filePath = path.join("/tmp", filename);
+    const tempDir = os.tmpdir();
+    const filePath = path.join(tempDir, filename);
 
-    if (!operation.response.generatedVideos) {
-      throw new Error("Video generation failed");
-    }
-
-    // Download video to temp
+    // Download
     await ai.files.download({
-      file: operation.response.generatedVideos[0].video,
+      file: videoFile,
       downloadPath: filePath
     });
 
@@ -272,32 +297,36 @@ export const createVideo = async (req: Request, res: Response) => {
       }
     });
 
-    // Delete temp file
     fs.unlinkSync(filePath);
 
-    res.json({ message: 'video generation completed', videoUrl: uploadResult.secure_url })
+    res.json({
+      message: "Video generation completed",
+      videoUrl: uploadResult.secure_url
+    });
+
   } catch (error: any) {
-    console.error('[createVideo] ✗ Error:', error.message);
-    console.error('[createVideo] ✗ Full error:', error?.response?.data || error);
+    console.error("[createVideo] Error:", error.message);
 
-    //update project status and error message
     await prisma.project.update({
-      where: { id: projectId, userId },
+      where: { id: projectId },
       data: { isGenerating: false, error: error.message }
-    })
+    });
 
+    // Refund credits
     if (isCreditDeducted) {
-      //add credits back
       await prisma.user.update({
         where: { id: userId },
-        data: { credits: { increment: 10 } }
-      })
+        data: {
+          credits: { increment: COST },
+          dailyCredits: { increment: COST }
+        }
+      });
     }
 
     Sentry.captureException(error);
     res.status(500).json({ message: error.message });
   }
-}
+};
 
 export const getAllPublishedProjects = async (req: Request, res: Response) => {
   try {

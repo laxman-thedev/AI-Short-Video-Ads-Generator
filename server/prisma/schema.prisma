@@ -12,7 +12,7 @@ model User {
   email           String
   name            String?
   image           String?
-  credits         Int      @default(0)
+  credits         Int      @default(20)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

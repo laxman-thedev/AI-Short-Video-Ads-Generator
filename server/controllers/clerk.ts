@@ -12,6 +12,8 @@ const clerkWebhooks = async (req: Request, res: Response) => {
     //getting data from request
     const { data, type } = evt;
 
+    console.log("Webhook received:", evt.type);
+
     //switch cases for different events
 
     switch (type) {

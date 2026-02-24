@@ -8,16 +8,15 @@ datasource db {
 }
 
 model User {
-  id              String   @id
-  email           String
-  name            String?
-  image           String?
-  credits         Int      @default(20)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  dailyCredits    Int      @default(20)
-  lastCreditReset DateTime @default(now())
+  id               String   @id
+  email            String
+  name             String?
+  image            String?
+  credits          Int      @default(20)
+  dailyCredits     Int      @default(20)
+  lastCreditReset  DateTime @default(now())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   projects        Project[]
 }

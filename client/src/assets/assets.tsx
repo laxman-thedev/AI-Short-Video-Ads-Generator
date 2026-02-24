@@ -1,4 +1,4 @@
-import logo from './logo.svg';
+import logo from './logo.png';
 import product1 from './product1.jpg'; // white watch
 import product2 from './product2.jpg'; // polaroid camera
 import product3 from './product3.jpg'; // sunglasses

@@ -18,14 +18,33 @@ const clerkWebhooks = async (req: Request, res: Response) => {
 
     switch (type) {
       case "user.created": {
-        await prisma.user.create({
-          data: {
-            id: data.id,
-            email: data?.email_addresses[0]?.email_address,
-            name: data?.first_name + " " + data?.last_name,
-            image: data?.image_url,
-          }
-        })
+        console.log("User created event received:", data.id);
+
+        const email =
+          data.email_addresses?.[0]?.email_address ||
+          data.external_accounts?.[0]?.email_address ||
+          "";
+
+        try {
+          await prisma.user.upsert({
+            where: { id: data.id },
+            update: {},
+            create: {
+              id: data.id,
+              email,
+              name: `${data.first_name || ""} ${data.last_name || ""}`.trim(),
+              image: data.image_url || null,
+              credits: 20,
+              dailyCredits: 20,
+              lastCreditReset: new Date(),
+            },
+          });
+
+          console.log("User saved to DB:", data.id);
+        } catch (err) {
+          console.error("DB save failed:", err);
+        }
+
         break;
       }
 

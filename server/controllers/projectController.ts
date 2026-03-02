@@ -111,8 +111,34 @@ export const createProject = async (req: Request, res: Response) => {
     const img2base64 = loadImage(images[1].path, images[1].mimetype);
     const prompt = {
       text: `
-        Combine the person and product into a realistic photo. Make the person naturally hold or use the product. Match lighting, shadows, scale and perspective. Make the person stand in professional studio lighting. Output ecommerce-quality photo realistic imagery. ${userPrompt}
-      ` };
+        Generate a premium commercial advertisement photo.
+
+        Combine the uploaded model and product naturally.
+        The model should confidently showcase the product in a believable pose.
+          Ensure:
+          - Correct scale and proportions
+          - Natural finger placement
+          - Realistic grip interaction
+          - Accurate shadow alignment
+          - Consistent light direction
+          - Proper perspective matching
+
+          Lighting setup:
+          Soft studio key light, balanced fill light, subtle rim light to separate subject from background.
+          Add realistic contact shadows under feet and product.
+
+          Camera:
+          Shot on professional DSLR, 85mm lens, shallow depth of field.
+          Cinematic color grading, balanced contrast, natural skin texture.
+
+        Product must remain sharp, clear, and visually dominant.
+        No distortions, no extra limbs, no blur on main subject.
+
+        Style: high-end ecommerce advertisement, photorealistic, ultra detailed, commercial ready.
+
+      ${userPrompt}
+  `
+    };
 
     const response: any = await ai.models.generateContent({
       model,
@@ -229,8 +255,39 @@ export const createVideo = async (req: Request, res: Response) => {
       data: { isGenerating: true }
     });
 
-    const prompt = `make the person showcase the product which is ${project.productName}
-    ${project.productDescription || ""}`;
+    const prompt = `
+      Create a realistic short promotional video advertisement.
+
+      The person should naturally and confidently showcase the product: ${project.productName}.
+      ${project.productDescription || ""}
+
+      The person should interact with the product in a believable way (holding, demonstrating, using, or presenting it).
+
+      Video style:
+      - UGC-style but high quality
+      - Looks like filmed on a modern smartphone
+      - Vertical 9:16 format
+      - Natural movements and expressions
+      - Authentic and engaging
+
+      Camera:
+      - Smooth handheld motion or slight cinematic movement
+      - Medium close-up transitioning to product focus
+      - Subtle depth of field
+
+      Lighting:
+      - Natural soft lighting
+      - Consistent shadows
+      - Professional commercial look
+
+      Make the product clearly visible and sharp.
+      Ensure realistic hand movement, no distortions, no unnatural body motion.
+
+      Mood: energetic, modern, social-media ready.
+      Style: high-quality ecommerce promotional ad.
+
+      Duration: short, engaging, scroll-stopping.
+      `;
 
     const model = "veo-3.1-generate-preview";
 

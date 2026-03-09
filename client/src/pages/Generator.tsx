@@ -15,8 +15,8 @@ import api from "../configs/axios";
 
 const Generator = () => {
 
-  const {user} = useUser()
-  const {getToken} = useAuth()
+  const { user } = useUser()
+  const { getToken } = useAuth()
   const navigate = useNavigate()
 
   const [name, setName] = useState("");
@@ -41,9 +41,14 @@ const Generator = () => {
 
   const handleGenerate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!user) return toast('please login to genearte')
+    if (!user) return toast('please login to generate')
     if (!productImage || !modelImage || !name || !productName || !aspectRatio)
       return toast('please fill all the required fields')
+
+    if (productImage?.size > 1 * 1024 * 1024 || modelImage?.size > 1 * 1024 * 1024) {
+      toast.error("Image too large. Max size 1 MB.");
+      return;
+    }
 
     try {
       setIsGenerating(true);
@@ -142,19 +147,17 @@ const Generator = () => {
               <div className="flex gap-3">
                 <RectangleVerticalIcon
                   onClick={() => setAspectRatio("9:16")}
-                  className={`p-2.5 size-13 bg-white/6 rounded cursor-pointer ${
-                    aspectRatio === "9:16"
+                  className={`p-2.5 size-13 bg-white/6 rounded cursor-pointer ${aspectRatio === "9:16"
                       ? "ring-2 ring-violet-500/50 bg-white/10"
                       : ""
-                  }`}
+                    }`}
                 />
                 <RectangleHorizontalIcon
                   onClick={() => setAspectRatio("16:9")}
-                  className={`p-2.5 size-13 bg-white/6 rounded cursor-pointer ${
-                    aspectRatio === "16:9"
+                  className={`p-2.5 size-13 bg-white/6 rounded cursor-pointer ${aspectRatio === "16:9"
                       ? "ring-2 ring-violet-500/50 bg-white/10"
                       : ""
-                  }`}
+                    }`}
                 />
               </div>
             </div>

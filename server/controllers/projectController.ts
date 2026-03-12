@@ -1,3 +1,21 @@
+/**
+ * Project Controller
+ * 
+ * Core business logic for AI generation workflows in UGC Flow.
+ * Handles:
+ * - Image generation using Google Gemini Flash Image model.
+ * - Video generation using Google Veo AI.
+ * - Project lifecycle management (create, delete, fetch).
+ * - Multi-stage credit deduction and refund logic.
+ * - Asset management with Cloudinary.
+ * 
+ * Request Flow (Generation):
+ * 1. Validate user credits (Cost: 5 for Image, 10 for Video).
+ * 2. Upload source images to Cloudinary.
+ * 3. Invoke AI models with specialized prompts.
+ * 4. Poll for long-running generation tasks (Video).
+ * 5. Store generated assets and update project state.
+ */
 import { Request, Response } from "express"
 import * as Sentry from "@sentry/node"
 import { prisma } from "../configs/prisma.js";
@@ -10,6 +28,10 @@ import axios from "axios";
 import { checkAndResetDailyCredits } from "../middlewares/dailyCredits.js";
 import os from "os";
 
+/**
+ * Helper to convert local files to the base64 format required by Google AI SDK.
+ * Used for providing input images to the Gemini model.
+ */
 const loadImage = (path: string, mimeType: string) => {
   return {
     inlineData: {
@@ -19,6 +41,19 @@ const loadImage = (path: string, mimeType: string) => {
   }
 }
 
+/**
+ * Create a new generation project and trigger AI image generation.
+ * 
+ * Process:
+ * 1. Validate credits (5 credits required).
+ * 2. Deduct credits from user's lifetime and daily balance.
+ * 3. Upload raw user images to Cloudinary for reference.
+ * 4. Construct AI prompt combining product details and user input.
+ * 5. Call Gemini AI Image model.
+ * 6. Upload generated image to Cloudinary.
+ * 7. Update project with final asset URL.
+ * 8. Refund credits if generation fails at any step.
+ */
 export const createProject = async (req: Request, res: Response) => {
 
   let tempProjectId: string;
@@ -30,10 +65,12 @@ export const createProject = async (req: Request, res: Response) => {
 
   const images: any = req.files;
 
+  // Requirement: User must provide at least two source images (e.g., product + person)
   if (images.length < 2 || !productName) {
     return res.status(400).json({ message: 'please upload at least 2 images' })
   }
 
+  // Check if user has sufficient credits and daily limit isn't reached
   const user = await checkAndResetDailyCredits(userId);
 
   if (!user || user.credits < COST || user.dailyCredits < COST) {
@@ -42,7 +79,7 @@ export const createProject = async (req: Request, res: Response) => {
     });
   }
   else {
-    //deduct credits for image generation
+    // Deduct credits upfront before starting expensive AI generation
     await prisma.user.update({
       where: { id: userId },
       data: {
@@ -53,6 +90,7 @@ export const createProject = async (req: Request, res: Response) => {
   }
 
   try {
+    // Stage 1: Upload source images to Cloudinary
     let uploadedImages = await Promise.all(
       images.map(async (item: any) => {
         let result = await cloudinary.uploader.upload(item.path, { resource_type: 'image' });
@@ -60,6 +98,7 @@ export const createProject = async (req: Request, res: Response) => {
       })
     )
 
+    // Stage 2: Create initial project record in database
     const project = await prisma.project.create({
       data: {
         name,
@@ -76,6 +115,7 @@ export const createProject = async (req: Request, res: Response) => {
 
     tempProjectId = project.id;
 
+    // Stage 3: AI Image Generation with Gemini
     const model = "gemini-2.5-flash-image";
     const generationConfig: GenerateContentConfig = {
       maxOutputTokens: 32768,
@@ -106,7 +146,7 @@ export const createProject = async (req: Request, res: Response) => {
       ]
     };
 
-    //image to base64 structure for ai model
+    // Construct the AI prompt logic
     const img1base64 = loadImage(images[0].path, images[0].mimetype);
     const img2base64 = loadImage(images[1].path, images[1].mimetype);
     const prompt = {
@@ -140,6 +180,7 @@ export const createProject = async (req: Request, res: Response) => {
   `
     };
 
+    // Execute generation
     const response: any = await ai.models.generateContent({
       model,
       contents: [img1base64, img2base64, prompt],
@@ -154,6 +195,7 @@ export const createProject = async (req: Request, res: Response) => {
 
     let finalBuffer: Buffer | null = null;
 
+    // Handle the resulting image part
     for (const part of parts) {
       if (part.inlineData?.data) {
         finalBuffer = Buffer.from(part.inlineData.data, "base64");
@@ -168,10 +210,12 @@ export const createProject = async (req: Request, res: Response) => {
 
     const base64Image = `data:image/png;base64,${finalBuffer.toString('base64')}`;
 
+    // Stage 4: Upload generated asset to Cloudinary
     const uploadResult = await cloudinary.uploader.upload(base64Image, {
       resource_type: 'image',
     });
 
+    // Finalize project state in database
     await prisma.project.update({
       where: { id: project.id },
       data: {
@@ -191,6 +235,7 @@ export const createProject = async (req: Request, res: Response) => {
         data: { isGenerating: false, error: error.message }
       })
     }
+    // Transactional Safety: Refund credits if the AI fails to produce an image
     if (isCreditDeducted) {
       //add credits back
       await prisma.user.update({
@@ -204,6 +249,19 @@ export const createProject = async (req: Request, res: Response) => {
   }
 }
 
+/**
+ * Generate a promotional video from a previously generated project image.
+ * 
+ * Process:
+ * 1. Validate project ownership and status.
+ * 2. Deduct credits (10 credits required).
+ * 3. Fetch the generated image and convert to bytes.
+ * 4. Trigger Veo AI video generation.
+ * 5. Poll the operation until completion (asynchronous task).
+ * 6. Download the resulting video to local temporary storage.
+ * 7. Upload final video to Cloudinary.
+ * 8. Cleanup local files and update database.
+ */
 export const createVideo = async (req: Request, res: Response) => {
   const { userId } = req.auth();
   const { projectId } = req.body;
@@ -221,7 +279,7 @@ export const createVideo = async (req: Request, res: Response) => {
       });
     }
 
-    // Validate project first
+    // Ensure the project exists and is ready for video generation
     const project = await prisma.project.findUnique({
       where: { id: projectId, userId }
     });
@@ -238,7 +296,7 @@ export const createVideo = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Generated image not found" });
     }
 
-    // Deduct credits only after validation
+    // Update credits and mark as generating
     await prisma.user.update({
       where: { id: userId },
       data: {
@@ -249,7 +307,6 @@ export const createVideo = async (req: Request, res: Response) => {
 
     isCreditDeducted = true;
 
-    // Mark generating
     await prisma.project.update({
       where: { id: projectId },
       data: { isGenerating: true }
@@ -291,12 +348,14 @@ export const createVideo = async (req: Request, res: Response) => {
 
     const model = "veo-3.1-generate-preview";
 
+    // Prepare image for Veo model
     const image = await axios.get(project.generatedImage, {
       responseType: "arraybuffer"
     });
 
     const imageBytes = Buffer.from(image.data);
 
+    // Call Video Generation API
     let operation: any = await ai.models.generateVideos({
       model,
       prompt,
@@ -311,7 +370,7 @@ export const createVideo = async (req: Request, res: Response) => {
       }
     });
 
-    // Poll
+    // AI Polling Logic: Video generation is long-running
     while (!operation.done) {
       await new Promise(resolve => setTimeout(resolve, 10000));
       operation = await ai.operations.getVideosOperation({ operation });
@@ -329,23 +388,23 @@ export const createVideo = async (req: Request, res: Response) => {
 
     const videoFile = operation.response.generatedVideos[0].video;
 
-    // Temp path for Vercel
+    // Temporary storage handling for Cloudinary upload
     const filename = `${userId}-${Date.now()}.mp4`;
     const tempDir = os.tmpdir();
     const filePath = path.join(tempDir, filename);
 
-    // Download
+    // Download generated video from AI provider
     await ai.files.download({
       file: videoFile,
       downloadPath: filePath
     });
 
-    // Upload to Cloudinary
+    // Upload to permanent storage
     const uploadResult = await cloudinary.uploader.upload(filePath, {
       resource_type: "video"
     });
 
-    // Update DB
+    // Final database update
     await prisma.project.update({
       where: { id: projectId },
       data: {
@@ -354,7 +413,10 @@ export const createVideo = async (req: Request, res: Response) => {
       }
     });
 
-    fs.unlinkSync(filePath);
+    // Cleanup temp file
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
 
     res.json({
       message: "Video generation completed",
@@ -369,7 +431,7 @@ export const createVideo = async (req: Request, res: Response) => {
       data: { isGenerating: false, error: error.message }
     });
 
-    // Refund credits
+    // Refund credits on failure
     if (isCreditDeducted) {
       await prisma.user.update({
         where: { id: userId },
@@ -385,6 +447,10 @@ export const createVideo = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Fetch all projects that have been marked as public.
+ * Used for the community gallery showcase.
+ */
 export const getAllPublishedProjects = async (req: Request, res: Response) => {
   try {
     const projects = await prisma.project.findMany({
@@ -397,6 +463,10 @@ export const getAllPublishedProjects = async (req: Request, res: Response) => {
   }
 }
 
+/**
+ * Permanently delete a project and its associated metadata.
+ * Requires project ownership.
+ */
 export const deleteProject = async (req: Request, res: Response) => {
   try {
     const { userId } = req.auth();

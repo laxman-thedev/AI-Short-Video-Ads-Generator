@@ -9,7 +9,15 @@ import { useNavigate } from "react-router-dom";
 import api from '../configs/axios'
 import toast from "react-hot-toast"
 
+/**
+ * MyGeneration Page Component
+ * 
+ * Displays a personalized collection of all AI projects created by the logged-in user.
+ * Fetches data from the backend on mount and provides a link to the generator
+ * if no projects are found.
+ */
 const MyGeneration = () => {
+
 
   const { user, isLoaded } = useUser()
   const { getToken } = useAuth()

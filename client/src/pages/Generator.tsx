@@ -13,12 +13,24 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import api from "../configs/axios";
 
+/**
+ * Generator Page Component
+ * 
+ * This is the main interface for creating a new AI-powered UGC project.
+ * It allows users to:
+ * 1. Upload a product image and a model image.
+ * 2. Specify project and product names.
+ * 3. Choose an aspect ratio (9:16 or 16:9).
+ * 4. Provide optional descriptions and AI prompts.
+ * 5. Trigger the backend AI generation pipeline.
+ */
 const Generator = () => {
 
   const { user } = useUser()
   const { getToken } = useAuth()
   const navigate = useNavigate()
 
+  // Form state
   const [name, setName] = useState("");
   const [productName, setProductName] = useState("");
   const [productDescription, setProductDescription] = useState("");
@@ -29,6 +41,9 @@ const Generator = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
 
+  /**
+   * Handles local file selection and updates corresponding state.
+   */
   const handleFileChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     type: "product" | "model"
@@ -39,12 +54,19 @@ const Generator = () => {
     }
   };
 
+  /**
+   * Submits the project creation form to the backend.
+   * Packages images and metadata into FormData for multipart/form-data transmission.
+   */
   const handleGenerate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!user) return toast('please login to generate')
+    
+    // Validation: Ensure all required fields and images are present
     if (!productImage || !modelImage || !name || !productName || !aspectRatio)
       return toast('please fill all the required fields')
 
+    // File Size Constraint: Max 1MB per image
     if (productImage?.size > 1 * 1024 * 1024 || modelImage?.size > 1 * 1024 * 1024) {
       toast.error("Image too large. Max size 1 MB.");
       return;
@@ -57,15 +79,19 @@ const Generator = () => {
       formData.append('productName', productName)
       formData.append('productDescription', productDescription)
       formData.append('userPrompt', userPrompt)
-      formData.append('aspectRatio', aspectRatio) // changes
+      formData.append('aspectRatio', aspectRatio)
       formData.append('images', productImage)
       formData.append('images', modelImage)
 
       const token = await getToken()
 
-      const { data } = await api.post('api/project/create', formData, { headers: { Authorization: `Bearer ${token}` } })
+      // Trigger the backend generation process
+      const { data } = await api.post('api/project/create', formData, { 
+        headers: { Authorization: `Bearer ${token}` } 
+      })
 
       toast.success(data.message)
+      // Navigate to the result page to monitor generation progress
       navigate('/result/' + data.projectId)
 
     } catch (error: any) {
@@ -77,6 +103,7 @@ const Generator = () => {
   }
 
   return (
+
     <div className="min-h-screen text-white p-6 md:p-12 mt-28">
       <form onSubmit={handleGenerate} className="max-w-4xl mx-auto mb-40">
         <Title

@@ -1,4 +1,11 @@
+/**
+ * SoftBackdrop Component
+ * 
+ * A decorative layout component that adds blurred, colored gradients 
+ * to the background for a premium 'glassmorphism' aesthetic.
+ */
 export default function SoftBackdrop() {
+
     return (
         <div className="fixed inset-0 -z-1 pointer-events-none">
             <div className="absolute left-1/2 top-20 -translate-x-1/2 w-[980px] h-[460px] bg-linear-to-tr from-violet-800/40 to-transparent rounded-full blur-3xl" />

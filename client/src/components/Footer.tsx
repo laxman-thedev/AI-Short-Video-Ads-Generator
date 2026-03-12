@@ -2,7 +2,14 @@ import { footerLinks } from '../assets/dummy-data';
 import { motion } from 'framer-motion';
 import { assets } from '../assets/assets';
 
+/**
+ * Footer Component
+ * 
+ * Displays company branding, navigation links (fetched from dummy data),
+ * and dynamic copyright information.
+ */
 export default function Footer() {
+
 
     return (
         <motion.footer className="bg-white/6 border-t border-white/6 pt-10 text-gray-300"

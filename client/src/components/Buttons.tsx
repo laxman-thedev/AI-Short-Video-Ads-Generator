@@ -1,3 +1,10 @@
+/**
+ * Shared Button Components
+ * 
+ * Provides consistent styling for primary actions (gradient background)
+ * and secondary actions (ghost/glass effect).
+ */
+
 import React from 'react'
 
 export const PrimaryButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement>> = ({ children, className, ...props }) => (

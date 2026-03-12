@@ -2,7 +2,14 @@ import { ArrowRightIcon } from 'lucide-react';
 import { GhostButton } from './Buttons';
 import { motion } from 'framer-motion';
 
+/**
+ * CTA (Call-to-Action) Component
+ * 
+ * A high-conversion section at the bottom of the landing page 
+ * encouraging users to start creating projects.
+ */
 export default function CTA() {
+
     return (
         <section className="py-20 2xl:pb-32 px-4">
             <div className="container mx-auto max-w-3xl">

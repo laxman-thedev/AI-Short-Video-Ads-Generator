@@ -1,3 +1,11 @@
+/**
+ * Main Application Component
+ * 
+ * Sets up the global layout including the navigation bar, footer,
+ * smooth scrolling (Lenis), and defines the application's routing structure.
+ * Also initializes the global toast notification system.
+ */
+
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import SoftBackdrop from './components/SoftBackdrop';
@@ -15,10 +23,17 @@ import { Toaster } from 'react-hot-toast';
 function App() {
 	return (
 		<>
+			{/* Global toast notification configuration */}
 			<Toaster toastOptions={{style:{background:'#333',color:'#fff'}}} />
+			
+			{/* UI Background and smooth scroll effects */}
 			<SoftBackdrop />
 			<LenisScroll />
+			
+			{/* Shared Header/Navigation */}
 			<Navbar />
+
+			{/* Main Content Areas / Routing */}
 			<Routes>
 				<Route path='/' element={<Home />} />
 				<Route path='/generate' element={<Generator />} />
@@ -28,8 +43,11 @@ function App() {
 				<Route path='/plans' element={<Plans />} />
 				<Route path='/loading' element={<Loading />} />
 			</Routes>
+
+			{/* Shared Footer */}
 			<Footer />
 		</>
 	);
 }
-export default App;
+
+export default App;

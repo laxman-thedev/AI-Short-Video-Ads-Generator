@@ -1,9 +1,25 @@
+/**
+ * User Controller
+ * 
+ * Handles user-related data operations including:
+ * - Fetching user credit balance
+ * - Retrieving user generation projects
+ * - Managing project visibility (public/private)
+ * 
+ * Interacts with the Prisma database to manage user and project state.
+ */
 import { Request, Response } from "express"
 import * as Sentry from "@sentry/node"
 import { prisma } from "../configs/prisma.js";
 
-
-//get user credits
+/**
+ * Retrieve the current credit balance for the authenticated user.
+ * 
+ * Request flow:
+ * 1. Extract userId from session.
+ * 2. Query database for user profile.
+ * 3. Return user's available credits.
+ */
 export const getUserCredits = async (req: Request, res: Response) => {
     try {
         const { userId } = req.auth();
@@ -23,7 +39,10 @@ export const getUserCredits = async (req: Request, res: Response) => {
     }
 }
 
-//const get all user projects
+/**
+ * Fetch all AI generation projects created by the authenticated user.
+ * Returns projects sorted by creation date (descending).
+ */
 export const getAllProjects = async (req: Request, res: Response) => {
     try {
         const { userId } = req.auth();
@@ -39,7 +58,10 @@ export const getAllProjects = async (req: Request, res: Response) => {
     }
 }
 
-//get project by id
+/**
+ * Retrieve details of a specific project by its ID.
+ * Ensures the project belongs to the requesting user.
+ */
 export const getProjectById = async (req: Request, res: Response) => {
     try {
         const { userId } = req.auth();
@@ -63,7 +85,13 @@ export const getProjectById = async (req: Request, res: Response) => {
     }
 };
 
-//publish / unpublish project
+/**
+ * Toggle the public visibility status of a project.
+ * 
+ * Constraints:
+ * - Project must belong to the user.
+ * - Project must have at least a generated image or video to be published.
+ */
 export const toggleProjectPublic = async (req: Request, res: Response) => {
     try {
         const { userId } = req.auth();
@@ -88,4 +116,4 @@ export const toggleProjectPublic = async (req: Request, res: Response) => {
         Sentry.captureException(error);
         res.status(500).json({ message: error.code || error.message })
     }
-}
+}

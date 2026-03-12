@@ -2,8 +2,17 @@ import { ArrowRightIcon, PlayIcon, ZapIcon, CheckIcon } from 'lucide-react';
 import { PrimaryButton, GhostButton } from './Buttons';
 import { motion } from 'framer-motion';
 
+/**
+ * Hero Component
+ * 
+ * The main landing page section that introduces UGC Flow.
+ * Features a value proposition, trust signals (user avatars), call-to-action buttons,
+ * and a visual mockup of the tool's output.
+ * Uses Framer Motion for scroll-triggered entrance animations.
+ */
 export default function Hero() {
 
+    // Mock data for social proof avatars
     const trustedUserImages = [
         'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=50',
         'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=50',
@@ -12,6 +21,7 @@ export default function Hero() {
 
     const mainImageUrl = 'https://images.unsplash.com/photo-1576267423445-b2e0074d68a4?q=80&w=1600&auto=format&fit=crop';
 
+    // Mock thumbnails for the gallery preview strip
     const galleryStripImages = [
         'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=100',
         'https://images.unsplash.com/photo-1517048676732-d65bc937f952?q=80&w=100',
@@ -19,11 +29,7 @@ export default function Hero() {
     ];
 
     const trustedLogosText = [
-        'Adobe',
-        'Figma',
-        'Canva',
-        'Shopify',
-        'Webflow'
+        'Adobe', 'Figma', 'Canva', 'Shopify', 'Webflow'
     ];
 
     return (
@@ -31,7 +37,10 @@ export default function Hero() {
             <section id="home" className="relative z-10">
                 <div className="max-w-6xl mx-auto px-4 min-h-screen max-md:w-screen max-md:overflow-hidden pt-32 md:pt-26 flex items-center justify-center">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+                        
+                        {/* Left Column: Text Content and CTAs */}
                         <div className="text-left">
+                            {/* Trust Indicator / Social Proof */}
                             <motion.a href="https://prebuiltui.com/tailwind-templates?ref=pixel-forge" className="inline-flex items-center gap-3 pl-3 pr-4 py-1.5 rounded-full bg-white/10 mb-6 justify-start"
                                 initial={{ y: 60, opacity: 0 }}
                                 whileInView={{ y: 0, opacity: 1 }}
@@ -55,6 +64,7 @@ export default function Hero() {
                                 </span>
                             </motion.a>
 
+                            {/* Main Value Proposition */}
                             <motion.h1 className="text-4xl md:text-5xl font-bold leading-tight mb-6 max-w-xl"
                                 initial={{ y: 60, opacity: 0 }}
                                 whileInView={{ y: 0, opacity: 1 }}
@@ -76,6 +86,7 @@ export default function Hero() {
                                 Upload product images and a model photo - our AI instantly produces professionsl lifestyle imagery and short-form videos optimized for commercials & Reels.
                             </motion.p>
 
+                            {/* Primary and Secondary CTAs */}
                             <motion.div className="flex flex-col sm:flex-row items-center gap-4 mb-8"
                                 initial={{ y: 60, opacity: 0 }}
                                 whileInView={{ y: 0, opacity: 1 }}
@@ -95,6 +106,7 @@ export default function Hero() {
                                 </GhostButton>
                             </motion.div>
 
+                            {/* Feature Highlights */}
                             <motion.div className="flex sm:inline-flex overflow-hidden items-center max-sm:justify-center text-sm text-gray-200 bg-white/10 rounded"
                                 initial={{ y: 60, opacity: 0 }}
                                 whileInView={{ y: 0, opacity: 1 }}
@@ -125,7 +137,7 @@ export default function Hero() {
                             </motion.div>
                         </div>
 
-                        {/* Right: modern mockup card */}
+                        {/* Right Column: Modern Mockup Card / Visual Preview */}
                         <motion.div className="mx-auto w-full max-w-lg"
                             initial={{ opacity: 0 }}
                             whileInView={{ opacity: 1 }}
@@ -153,6 +165,7 @@ export default function Hero() {
                                 </div>
                             </motion.div>
 
+                            {/* Supplementary Thumbnail Strip */}
                             <div className="mt-4 flex gap-3 items-center justify-start">
                                 {galleryStripImages.map((src, i) => (
                                     <motion.div
@@ -189,7 +202,7 @@ export default function Hero() {
                 </div>
             </section>
 
-            {/* LOGO MARQUEE */}
+            {/* LOGO MARQUEE: Displays partner/tool integration logos */}
             <motion.section className="border-y border-white/6 bg-white/1 max-md:mt-10"
                 initial={{ y: 60, opacity: 0 }}
                 whileInView={{ y: 0, opacity: 1 }}
@@ -213,4 +226,4 @@ export default function Hero() {
             </motion.section>
         </>
     );
-};
+};

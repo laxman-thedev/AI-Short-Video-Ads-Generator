@@ -1,7 +1,14 @@
 import Title from './Title';
 import { PricingTable } from '@clerk/clerk-react';
 
+/**
+ * Pricing Section Component
+ * 
+ * Integrates the Clerk PricingTable to allow users to view and select 
+ * subscription plans.
+ */
 export default function Pricing() {
+
     return (
         <section id="pricing" className="py-20 bg-white/3 border-t border-white/6">
             <div className="max-w-6xl mx-auto px-4">

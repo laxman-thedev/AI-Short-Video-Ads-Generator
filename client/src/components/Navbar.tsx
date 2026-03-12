@@ -10,6 +10,13 @@ import toast from 'react-hot-toast';
 
 
 
+/**
+ * Navbar Component
+ * 
+ * Provides global navigation, user authentication status,
+ * and displays the user's available credits.
+ * Integrates with Clerk for user management and uses Framer Motion for animations.
+ */
 export default function Navbar() {
 
     const navigate = useNavigate()
@@ -28,6 +35,10 @@ export default function Navbar() {
         { name: 'Plans', href: '/plans' },
     ];
 
+    /**
+     * Fetches the current user's remaining credits from the backend.
+     * Uses Clerk authentication token for authorization.
+     */
     const getUserCredits = async () => {
         try {
             const token = await getToken();
@@ -41,6 +52,7 @@ export default function Navbar() {
         }
     }
 
+    // Refresh credits whenever the user logs in or navigation occurs
     useEffect(() => {
         if (user) {
             (async ()=> await getUserCredits())();
@@ -55,10 +67,12 @@ export default function Navbar() {
             transition={{ type: "spring", stiffness: 250, damping: 70, mass: 1 }}
         >
             <div className='max-w-6xl mx-auto flex items-center justify-between bg-black/50 backdrop-blur-md border border-white/4 rounded-2xl p-3'>
+                {/* Logo and Home Link */}
                 <Link to='/' onClick={() => scrollTo(0, 0)}>
                     <img src={assets.logo} alt="logo" className="h-8" />
                 </Link>
 
+                {/* Desktop Navigation Links */}
                 <div className='hidden md:flex items-center gap-8 text-sm font-medium text-gray-300'>
                     {navLinks.map((link) => (
                         <Link onClick={() => scrollTo(0, 0)} to={link.href} key={link.name} className="hover:text-white transition">
@@ -67,6 +81,7 @@ export default function Navbar() {
                     ))}
                 </div>
 
+                {/* Authentication and Credits Section */}
                 {!user ? (
                     <div className='hidden md:flex items-center gap-3'>
                         <button onClick={() => openSignIn()} className='text-sm font-medium text-gray-300 hover:text-white transition max-sm:hidden'>
@@ -76,9 +91,12 @@ export default function Navbar() {
                     </div>
                 ) : (
                     <div className='flex gap-2'>
+                        {/* User Credit Balance */}
                         <GhostButton onClick={() => navigate('/plans')} className='border-none text-gray-300 sm:py-1.5' >
                             Credits: {credits}
                         </GhostButton>
+                        
+                        {/* Clerk User Profile and Actions */}
                         <UserButton>
                             <UserButton.MenuItems>
 
@@ -100,12 +118,15 @@ export default function Navbar() {
                     </div>
                 )}
 
+                {/* Mobile Menu Toggle */}
                 {!user && <button onClick={() => setIsOpen(!isOpen)} className='md:hidden'>
                     <MenuIcon className='size-6' />
                 </button>}
 
 
             </div>
+
+            {/* Mobile Navigation Overlay */}
             <div className={`flex flex-col items-center justify-center gap-6 text-lg font-medium fixed inset-0 bg-black/40 backdrop-blur-md z-50 transition-all duration-300 ${isOpen ? "translate-x-0" : "translate-x-full"}`}>
                 {navLinks.map((link) => (
                     <a key={link.name} href={link.href} onClick={() => setIsOpen(false)}>
@@ -127,4 +148,4 @@ export default function Navbar() {
             </div>
         </motion.nav>
     );
-};
+};

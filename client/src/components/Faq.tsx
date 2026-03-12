@@ -4,7 +4,14 @@ import { faqData } from '../assets/dummy-data';
 import { useRef } from 'react';
 import { motion } from 'framer-motion';
 
+/**
+ * FAQ (Frequently Asked Questions) Component
+ * 
+ * Renders an accordion-style list of common user questions and answers.
+ * Uses Framer Motion for entrance animations.
+ */
 export default function Faq() {
+
     const refs = useRef<(HTMLDetailsElement | null)[]>([]);
     return (
         <section id="faq" className="py-20 2xl:py-32">

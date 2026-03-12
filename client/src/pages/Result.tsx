@@ -15,6 +15,13 @@ import { useAuth, useUser } from "@clerk/clerk-react";
 import api from "../configs/axios";
 import toast from "react-hot-toast";
 
+/**
+ * Result Page Component
+ * 
+ * Displays the outcome of an AI generation project.
+ * Provides real-time status updates through polling while the project is being generated.
+ * Allows users to download results and trigger high-quality AI video generation from the generated image.
+ */
 const Result = () => {
   const { projectId } = useParams();
   const { getToken } = useAuth()
@@ -25,6 +32,9 @@ const Result = () => {
   const [loading, setLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
 
+  /**
+   * Fetches the latest project data from the backend.
+   */
   const fetchProjectData = async () => {
     try {
       const token = await getToken()
@@ -40,6 +50,9 @@ const Result = () => {
     }
   }
 
+  /**
+   * Requestst the backend to generate an AI video based on the existing generated image.
+   */
   const handleGenerateVideo = async () => {
     setIsGenerating(true)
     try {
@@ -56,6 +69,8 @@ const Result = () => {
       console.log(error);
     }
   }
+
+  // Initial data fetch and auth check
   useEffect(() => {
     if (user && !project.id) {
       fetchProjectData();
@@ -64,8 +79,12 @@ const Result = () => {
     }
   }, [user]);
 
-  //fetch project every10 seconds
-
+  /**
+   * Polling Mechanism
+   * 
+   * Continually refreshes project data every 10 seconds if the project 
+   * is currently in a 'generating' state on the backend.
+   */
   useEffect(() => {
     if (user && isGenerating) {
       const interval = setInterval(() => {
@@ -76,6 +95,7 @@ const Result = () => {
   }, [user, isGenerating])
 
   return loading ? (
+
     <div className="h-screen w-full items-center justify-center" >
       <Loader2Icon className="animate-spin text-indigo size-9" />
     </div>

@@ -16,6 +16,16 @@ import { useAuth } from "@clerk/clerk-react";
 import api from "../configs/axios";
 import toast from "react-hot-toast";
 
+/**
+ * ProjectCard Component
+ * 
+ * Displays a single AI-generated project, including image/video previews,
+ * status badges, and management actions (delete, publish, share).
+ * 
+ * @param {Project} gen - The project data object.
+ * @param {Dispatch} setGenerations - State setter to update the parent list after deletion.
+ * @param {boolean} forCommunity - Whether the card is being displayed in the community gallery.
+ */
 const ProjectCard = ({
   gen,
   setGenerations,
@@ -30,6 +40,10 @@ const ProjectCard = ({
   const [menuOpen, setMenuOpen] = useState(false);
   const {getToken} = useAuth()
 
+  /**
+   * Deletes a project from the database.
+   * Requires user confirmation and authentication token.
+   */
   const handleDelete = async (id:string) => {
       const confirm = window.confirm('Are you sure you want to delete this project?')
       if (!confirm)  return;
@@ -38,6 +52,7 @@ const ProjectCard = ({
         const {data} = await api.delete(`/api/project/${id}`,{
           headers:{Authorization:`Bearer ${token}`}
         })
+        // Remove from local state after successful deletion
         setGenerations((generations)=>generations.filter((gen)=>gen.id !== id));
         toast.success(data.message)
       } catch (error:any) {
@@ -46,12 +61,17 @@ const ProjectCard = ({
       }  
   }
 
+  /**
+   * Toggles the 'published' status of a project.
+   * Published projects are visible in the community gallery.
+   */
   const togglePublish = async (projectId:string) => {
       try {
         const token = await getToken();
         const {data}=await api.get(`/api/user/publish/${projectId}`,{
           headers:{Authorization:`Bearer ${token}`}
         })
+        // Synchronize local state with the new publish status
         setGenerations((generations)=>generations.map((gen)=>gen.id === projectId ? {...gen,isPublished:data.isPublished}:gen));
         toast.success(data.isPublished ? 'Project published':'project unpublished');
       } catch (error:any) {
@@ -63,11 +83,13 @@ const ProjectCard = ({
   return (
     <div className="mb-4 break-inside-avoid">
       <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden hover:border-white/20 transition group">
-        {/* Preview */}
+        
+        {/* Media Preview Section: Images or Video */}
         <div
           className={`${gen?.aspectRatio === "9:16" ? "aspect-[9/16]" : "aspect-video"
             } relative overflow-hidden`}
         >
+          {/* Static Image Preview */}
           {gen.generatedImage && (
             <img
               src={gen.generatedImage}
@@ -79,6 +101,7 @@ const ProjectCard = ({
             />
           )}
 
+          {/* Video Preview (plays on hover) */}
           {gen.generatedVideo && (
             <video
               src={gen.generatedVideo}
@@ -91,13 +114,14 @@ const ProjectCard = ({
             />
           )}
 
+          {/* Placeholder while generating */}
           {!gen.generatedImage && !gen.generatedVideo && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/20">
               <Loader2Icon className="size-7 animate-spin" />
             </div>
           )}
 
-          {/* Status badges */}
+          {/* Status Indicators (Generating/Published) */}
           <div className="absolute left-3 top-3 flex gap-2">
             {gen.isGenerating && (
               <span className="text-xs px-2 py-1 bg-yellow-600/30 rounded-full">
@@ -111,7 +135,7 @@ const ProjectCard = ({
             )}
           </div>
 
-          {/* Action menu for my generations only */}
+          {/* Action Popover Menu (Download/Share/Delete) */}
           {!forCommunity && (
             <div
               onMouseDownCapture={() => setMenuOpen(true)}
@@ -168,7 +192,7 @@ const ProjectCard = ({
             </div>
           )}
 
-          {/* Source images */}
+          {/* Thumbnails of original source images */}
           {gen.uploadedImages?.length >= 2 && (
             <div className="absolute right-3 bottom-3">
               <img
@@ -185,10 +209,10 @@ const ProjectCard = ({
           )}
         </div>
 
-        {/* Details */}
+        {/* Project Metadata Section */}
         <div className="p-4 space-y-3">
 
-          {/* Title + Aspect Badge */}
+          {/* Title and Aspect Ratio Badge */}
           <div className="flex items-start justify-between gap-3">
             <h3 className="font-semibold text-lg leading-tight">
               {gen.productName}
@@ -199,7 +223,7 @@ const ProjectCard = ({
             </span>
           </div>
 
-          {/* Dates */}
+          {/* Creation and Update Timestamps */}
           <div className="text-xs text-gray-400 space-y-1">
             <p>
               Created: {new Date(gen.createdAt).toLocaleString()}
@@ -212,7 +236,7 @@ const ProjectCard = ({
             )}
           </div>
 
-          {/* Description */}
+          {/* Product Description Snippet */}
           {gen.productDescription && (
             <div className="mt-2">
               <p className="text-xs text-gray-400 mb-1">Description</p>
@@ -222,7 +246,7 @@ const ProjectCard = ({
             </div>
           )}
 
-          {/* Buttons */}
+          {/* Call-to-Action Buttons */}
           {!forCommunity && (
             <div className="pt-2 grid grid-cols-2 gap-3">
               <GhostButton
@@ -246,4 +270,6 @@ const ProjectCard = ({
   );
 };
 
+
 export default ProjectCard;
+

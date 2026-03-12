@@ -3,7 +3,14 @@ import { featuresData } from '../assets/dummy-data';
 import Title from './Title';
 import { motion } from 'framer-motion';
 
+/**
+ * Features Section Component
+ * 
+ * Displays a grid of key platform capabilities (AI generation, social media optimization, etc.)
+ * with icons and descriptions.
+ */
 export default function Features() {
+
     const refs = useRef<(HTMLDivElement | null)[]>([]);
     return (
         <section id="features" className="py-20 2xl:py-32">

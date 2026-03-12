@@ -6,7 +6,19 @@ interface TitleProps {
     description?: string;
 }
 
+/**
+ * Shared Title Component
+ * 
+ * Renders a consistent section header including an optional small title,
+ * a main heading, and a descriptive paragraph.
+ * Uses Framer Motion for scroll-triggered entrance animations.
+ * 
+ * @param {string} title - Optional small uppercase title.
+ * @param {string} heading - Main section heading.
+ * @param {string} description - Descriptive paragraph text.
+ */
 export default function Title({ title, heading, description }: TitleProps) {
+
 
     return (
         <div className="text-center mb-16">

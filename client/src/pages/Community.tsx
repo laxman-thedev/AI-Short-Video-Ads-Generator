@@ -7,7 +7,14 @@ import ProjectCard from "../components/ProjectCard";
 import api from "../configs/axios";
 import toast from "react-hot-toast";
 
+/**
+ * Community Page Component
+ * 
+ * A public gallery showcasing AI projects that users have chosen to publish.
+ * Fetches all published projects from the backend and displays them using common ProjectCards.
+ */
 const Community = () => {
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 

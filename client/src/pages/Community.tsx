@@ -49,7 +49,7 @@ const Community = () => {
             Community
           </h1>
           <p className="text-gray-400">
-            See what others are creating with UGC.ai
+            See what others are creating with UGC Flow
           </p>
         </header>
 
